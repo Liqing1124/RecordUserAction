@@ -125,56 +125,69 @@ namespace RecordUserAction
             get { return _isReplaying; }
         }
 
-        public void ReplayActions()
+        // Modified to accept replay count
+        public void ReplayActions(int replayCount = 1)
         {
-            if (_isRecording || _isReplaying || _recordedActions.Count == 0) return;
+            if (_isRecording || _isReplaying || _recordedActions.Count == 0 || replayCount < 1) return;
 
             _isReplaying = true;
-            ReplayStarted?.Invoke(this, EventArgs.Empty);
+            ReplayStarted?.Invoke(this, EventArgs.Empty); // Fire started event once
 
-            Thread replayThread = new Thread(new ThreadStart(ReplayActionsThread));
+            // Pass replayCount to the thread
+            Thread replayThread = new Thread(new ParameterizedThreadStart(ReplayActionsThread));
             replayThread.SetApartmentState(ApartmentState.STA);
-            replayThread.Start();
+            replayThread.Start(replayCount);
         }
 
-        private void ReplayActionsThread()
+        // Modified to accept replay count object and loop
+        private void ReplayActionsThread(object replayCountObj)
         {
+            int replayCount = (int)replayCountObj;
             Stopwatch replayTimer = new Stopwatch();
-            replayTimer.Start();
 
-            int actionIndex = 0;
-            long lastFrameTime = 0;
             
-            while (actionIndex < _recordedActions.Count)
+            for (int i = 0; i < replayCount; i++)
             {
-                UserAction action = _recordedActions[actionIndex];
-                long currentTime = replayTimer.ElapsedMilliseconds;
-                
-                // Maintain consistent frame timing
-                if (currentTime - lastFrameTime < 16) // ~60fps frame time
-                {
-                    Thread.Sleep(1);
-                    continue;
-                }
-                
-                // Wait until it's time to perform this action
-                if (currentTime < action.TimestampMs)
-                {
-                    Thread.Sleep(1);
-                    continue;
-                }
-                
-                lastFrameTime = currentTime;
+                replayTimer.Restart(); // Restart timer for each replay cycle
+                int actionIndex = 0;
+                long lastFrameTime = 0;
 
-                // Perform the action
-                PerformAction(action, actionIndex);
-                actionIndex++;
+                while (actionIndex < _recordedActions.Count)
+                {
+                    UserAction action = _recordedActions[actionIndex];
+                    long currentTime = replayTimer.ElapsedMilliseconds;
+
+                    // Maintain consistent frame timing (optional, adjust as needed)
+                    // if (currentTime - lastFrameTime < 16) // ~60fps frame time
+                    // {
+                    //     Thread.Sleep(1);
+                    //     continue;
+                    // }
+
+                    // Wait until it's time to perform this action relative to the start of this cycle
+                    if (currentTime < action.TimestampMs)
+                    {
+                        Thread.Sleep(1);
+                        continue;
+                    }
+
+                    lastFrameTime = currentTime;
+
+                    // Perform the action
+                    PerformAction(action, actionIndex);
+                    actionIndex++;
+                }
+                replayTimer.Stop(); // Stop timer for this cycle
+
+                // Optional: Add a small delay between replays if desired
+                if (i < replayCount - 1)
+                {
+                    Thread.Sleep(500); // 500ms delay between replays
+                }
             }
 
-            replayTimer.Stop();
-            
-            // Add a safety delay to ensure no more actions are performed immediately
-            Thread.Sleep(500);
+            // Add a final safety delay after all replays are done
+            Thread.Sleep(500); 
             
             // Set the post-replay cooldown flag
             _isInPostReplayCooldown = true;

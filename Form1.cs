@@ -10,6 +10,7 @@ namespace RecordUserAction
         private Button btnReplay;
         private Label lblStatus;
         private Label lblTimer;
+        private NumericUpDown numReplayCount; // Added control
         private UserActionRecorder actionRecorder;
         private bool isRecording = false;
         private System.Windows.Forms.Timer timerDisplay;
@@ -30,6 +31,7 @@ namespace RecordUserAction
             this.btnReplay = new Button();
             this.lblStatus = new Label();
             this.lblTimer = new Label();
+            this.numReplayCount = new NumericUpDown(); // Initialize control
             this.timerDisplay = new System.Windows.Forms.Timer();
             this.SuspendLayout();
             // 
@@ -52,9 +54,18 @@ namespace RecordUserAction
             this.btnReplay.Text = "Replay";
             this.btnReplay.UseVisualStyleBackColor = true;
             this.btnReplay.Click += new EventHandler(this.btnReplay_Click);
-            // 
+            //
+            // numReplayCount
+            //
+            this.numReplayCount.Location = new Point(310, 38); // Position near Replay button
+            this.numReplayCount.Name = "numReplayCount";
+            this.numReplayCount.Size = new Size(60, 23);
+            this.numReplayCount.TabIndex = 4; // Next tab index
+            this.numReplayCount.Minimum = 1; // Must replay at least once
+            this.numReplayCount.Value = 1; // Default to 1 replay
+            //
             // lblStatus
-            // 
+            //
             this.lblStatus.AutoSize = true;
             this.lblStatus.Location = new Point(30, 90);
             this.lblStatus.Name = "lblStatus";
@@ -80,7 +91,8 @@ namespace RecordUserAction
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(400, 150);
+            this.ClientSize = new System.Drawing.Size(400, 150); // Adjusted size slightly if needed, but seems ok
+            this.Controls.Add(this.numReplayCount); // Add control to form
             this.Controls.Add(this.lblTimer);
             this.Controls.Add(this.lblStatus);
             this.Controls.Add(this.btnReplay);
@@ -128,10 +140,11 @@ namespace RecordUserAction
 
         private void btnReplay_Click(object sender, EventArgs e)
         {
-            // Start replaying in a separate thread
-            actionRecorder.ReplayActions();
+            int replayCount = (int)numReplayCount.Value;
+            // Start replaying in a separate thread with the specified count
+            actionRecorder.ReplayActions(replayCount);
         }
-        
+
         private void ActionRecorder_ReplayStarted(object sender, EventArgs e)
         {
             lblStatus.Text = "Replaying actions...";
