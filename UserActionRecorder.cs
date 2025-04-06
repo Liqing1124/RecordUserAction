@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Drawing;
 
-namespace MyConsoleApp
+namespace RecordUserAction
 {
     public class UserAction
     {

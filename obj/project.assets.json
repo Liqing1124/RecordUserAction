@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "E:\\C-Sharp\\RecordUserActionApp\\MyConsoleApp.csproj",
+      "projectUniqueName": "E:\\C-Sharp\\RecordUserAction\\MyConsoleApp.csproj",
       "projectName": "MyConsoleApp",
-      "projectPath": "E:\\C-Sharp\\RecordUserActionApp\\MyConsoleApp.csproj",
+      "projectPath": "E:\\C-Sharp\\RecordUserAction\\MyConsoleApp.csproj",
       "packagesPath": "C:\\Users\\chinh\\.nuget\\packages\\",
-      "outputPath": "E:\\C-Sharp\\RecordUserActionApp\\obj\\",
+      "outputPath": "E:\\C-Sharp\\RecordUserAction\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\chinh\\AppData\\Roaming\\NuGet\\NuGet.Config"

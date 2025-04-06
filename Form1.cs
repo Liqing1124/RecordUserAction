@@ -2,7 +2,7 @@ using System;
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace MyConsoleApp
+namespace RecordUserAction
 {
     public partial class Form1 : Form
     {
