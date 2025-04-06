@@ -1,54 +1,63 @@
-# User Action Recording Application
+# User Action Recorder
 
-A Windows Forms application that records and replays user actions including mouse movements, clicks, and keyboard inputs. This tool is designed to help automate repetitive tasks by recording user interactions and playing them back.
+A C# Windows Forms application that records and replays user actions including mouse movements, clicks, and keyboard inputs with high precision and customizable replay functionality.
 
 ## Features
 
-- **Action Recording**: Records mouse movements, clicks, and keyboard combinations
-- **Smart Replay**: Faithfully reproduces recorded actions with timing preservation
-- **Safety Mechanisms**: Prevents recursive recording during replay
-- **Cooldown System**: Implements post-replay protection to prevent accidental re-recordings
-- **Global Hook System**: Captures system-wide mouse and keyboard events
+- **Mouse Action Recording**
+  - Records mouse clicks with precise coordinates
+  - Tracks mouse movements with optimized threshold detection
+  - Intelligent filtering of small movements to prevent noise
 
-## Technical Implementation
+- **Advanced Replay System**
+  - Customizable replay count for multiple iterations
+  - Smooth mouse movement interpolation during replay
+  - Built-in cooldown system to prevent accidental re-recording
 
-- Built with .NET Windows Forms
-- Uses global hooks for mouse and keyboard event capture
-- Implements precise timing using Stopwatch for accurate action replay
-- Features threshold-based mouse movement recording to optimize performance
+- **Smart Recording Controls**
+  - Record button protection during replay
+  - Temporary recording buffer support
+  - Automatic recording state management
 
-## Known Limitations
+- **Event Notifications**
+  - Replay start/complete event handling
+  - Real-time status tracking
 
-### Keyboard Events During Replay
+## Technical Details
 
-Keyboard inputs are intentionally disabled during replay mode. This is a deliberate design choice to prevent potential issues:
-
-1. **Prevention of Recursive Recording**: This prevents the application from recording its own replay actions, which could create an infinite loop
-2. **System Stability**: Helps maintain system stability by avoiding concurrent input handling
-3. **Predictable Behavior**: Ensures consistent replay behavior across different scenarios
-
-### Other Considerations
-
-- The application implements a cooldown period after replay to prevent immediate re-recording
-- Record button clicks are filtered during replay to maintain system integrity
-- Mouse movements are optimized with a threshold to prevent excessive data collection
+- Built with C# and Windows Forms
+- Uses low-level Windows hooks for input capture
+- Implements global mouse and keyboard event handling
+- Thread-safe replay execution
+- Efficient action timing system using Stopwatch
 
 ## Usage
 
-1. Launch the application
-2. Click the record button to start recording your actions
-3. Perform the actions you want to record
-4. Click the record button again to stop recording
-5. Use the replay functionality to reproduce the recorded actions
+1. **Starting a Recording**
+   - Launch the application
+   - Click the Record button to start capturing actions
+   - Perform the actions you want to record
+   - Click the Record button again to stop recording
 
-## Technical Notes
+2. **Replaying Actions**
+   - Set the desired number of replay iterations
+   - Start the replay
+   - The system will automatically handle timing and movement interpolation
 
-- Mouse movements are recorded with a threshold of 5 pixels to optimize performance
-- The application uses a sophisticated event system to manage recording and replay states
-- Implements proper cleanup and resource disposal through IDisposable pattern
+3. **Safety Features**
+   - Built-in cooldown period after replays
+   - Protection against accidental record button clicks during replay
+   - Automatic cleanup of resources
 
-## Safety Features
+## Requirements
 
-- Built-in protection against accidental re-recording during replay
-- Smart filtering of record button clicks during replay
-- Post-replay cooldown period to prevent immediate re-recording# RecordUserAction
+- Windows operating system
+- .NET 9.0 or later
+- Windows Forms compatible environment
+
+## Implementation Notes
+
+- Uses the `GlobalHook` class for system-wide input capture
+- Implements `IDisposable` for proper resource management
+- Maintains separate timers for recording and temporary buffers
+- Includes threshold-based movement filtering

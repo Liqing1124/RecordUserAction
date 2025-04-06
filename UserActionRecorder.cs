@@ -14,19 +14,12 @@ namespace RecordUserAction
         {
             MouseClick,
             MouseMove,
-            KeyPress,
-            KeyDown,
-            KeyUp,
-            KeyCombination,
             TabChange
         }
 
         public ActionType Type { get; set; }
         public Point Location { get; set; } // For mouse clicks
-        public Keys KeyCode { get; set; } // For key presses
-        public bool CtrlKey { get; set; } // For modifier keys
-        public bool ShiftKey { get; set; } // For modifier keys
-        public bool AltKey { get; set; } // For modifier keys
+
         public string TabName { get; set; } // For tab changes
         public long TimestampMs { get; set; } // Time since recording started
     }
@@ -50,7 +43,7 @@ namespace RecordUserAction
 
         // For global mouse and keyboard hooks
         private GlobalHook _mouseHook;
-        private GlobalHook _keyboardHook;
+
         private Point _lastMousePosition = Point.Empty;
         private const int MOUSE_MOVE_THRESHOLD = 5; // Minimum pixel distance to record a movement
 
@@ -58,14 +51,9 @@ namespace RecordUserAction
         {
             _targetForm = targetForm;
             _mouseHook = new GlobalHook(GlobalHook.HookType.Mouse);
-            _keyboardHook = new GlobalHook(GlobalHook.HookType.Keyboard);
 
             _mouseHook.MouseClick += OnMouseClick;
             _mouseHook.MouseMove += OnMouseMove;
-            _keyboardHook.KeyPress += OnKeyPress;
-            _keyboardHook.KeyDown += OnKeyDown;
-            _keyboardHook.KeyUp += OnKeyUp;
-            _keyboardHook.KeyCombination += OnKeyCombination;
             
             // Find and store reference to the record button
             foreach (Control control in targetForm.Controls)
@@ -323,146 +311,13 @@ namespace RecordUserAction
             });
         }
 
-        private void OnKeyPress(object sender, KeyPressEventArgs e)
-        {
-            if (_isRecordingDuringReplay)
-            {
-                _tempRecordBuffer.Add(new UserAction
-                {
-                    Type = UserAction.ActionType.KeyPress,
-                    KeyCode = (Keys)e.KeyChar,
-                    TimestampMs = _tempRecordTimer.ElapsedMilliseconds
-                });
-                return;
-            }
 
-            if (!_isRecording || _isReplaying) return;
-
-            _recordedActions.Add(new UserAction
-            {
-                Type = UserAction.ActionType.KeyPress,
-                KeyCode = (Keys)e.KeyChar,
-                TimestampMs = _recordingTimer.ElapsedMilliseconds
-            });
-        }
-        
-        private void OnKeyDown(object sender, KeyEventArgs e)
-        {
-            if (_isRecordingDuringReplay)
-            {
-                // Don't record modifier key presses as separate events
-                if (e.KeyCode == Keys.ControlKey || e.KeyCode == Keys.LControlKey || e.KeyCode == Keys.RControlKey ||
-                    e.KeyCode == Keys.ShiftKey || e.KeyCode == Keys.LShiftKey || e.KeyCode == Keys.RShiftKey ||
-                    e.KeyCode == Keys.Menu || e.KeyCode == Keys.LMenu || e.KeyCode == Keys.RMenu)
-                    return;
-
-                _tempRecordBuffer.Add(new UserAction
-                {
-                    Type = UserAction.ActionType.KeyDown,
-                    KeyCode = e.KeyCode,
-                    CtrlKey = (Control.ModifierKeys & Keys.Control) == Keys.Control,
-                    ShiftKey = (Control.ModifierKeys & Keys.Shift) == Keys.Shift,
-                    AltKey = (Control.ModifierKeys & Keys.Alt) == Keys.Alt,
-                    TimestampMs = _tempRecordTimer.ElapsedMilliseconds
-                });
-                return;
-            }
-
-            if (!_isRecording || _isReplaying || _isInPostReplayCooldown) return;
-            
-            // Don't record modifier key presses as separate events
-            if (e.KeyCode == Keys.ControlKey || e.KeyCode == Keys.LControlKey || e.KeyCode == Keys.RControlKey ||
-                e.KeyCode == Keys.ShiftKey || e.KeyCode == Keys.LShiftKey || e.KeyCode == Keys.RShiftKey ||
-                e.KeyCode == Keys.Menu || e.KeyCode == Keys.LMenu || e.KeyCode == Keys.RMenu)
-                return;
-                
-            _recordedActions.Add(new UserAction
-            {
-                Type = UserAction.ActionType.KeyDown,
-                KeyCode = e.KeyCode,
-                CtrlKey = (Control.ModifierKeys & Keys.Control) == Keys.Control,
-                ShiftKey = (Control.ModifierKeys & Keys.Shift) == Keys.Shift,
-                AltKey = (Control.ModifierKeys & Keys.Alt) == Keys.Alt,
-                TimestampMs = _recordingTimer.ElapsedMilliseconds
-            });
-        }
-        
-        private void OnKeyUp(object sender, KeyEventArgs e)
-        {
-            if (_isRecordingDuringReplay)
-            {
-                // Don't record modifier key releases as separate events
-                if (e.KeyCode == Keys.ControlKey || e.KeyCode == Keys.LControlKey || e.KeyCode == Keys.RControlKey ||
-                    e.KeyCode == Keys.ShiftKey || e.KeyCode == Keys.LShiftKey || e.KeyCode == Keys.RShiftKey ||
-                    e.KeyCode == Keys.Menu || e.KeyCode == Keys.LMenu || e.KeyCode == Keys.RMenu)
-                    return;
-
-                _tempRecordBuffer.Add(new UserAction
-                {
-                    Type = UserAction.ActionType.KeyUp,
-                    KeyCode = e.KeyCode,
-                    CtrlKey = (Control.ModifierKeys & Keys.Control) == Keys.Control,
-                    ShiftKey = (Control.ModifierKeys & Keys.Shift) == Keys.Shift,
-                    AltKey = (Control.ModifierKeys & Keys.Alt) == Keys.Alt,
-                    TimestampMs = _tempRecordTimer.ElapsedMilliseconds
-                });
-                return;
-            }
-
-            if (!_isRecording || _isReplaying || _isInPostReplayCooldown) return;
-            
-            // Don't record modifier key releases as separate events
-            if (e.KeyCode == Keys.ControlKey || e.KeyCode == Keys.LControlKey || e.KeyCode == Keys.RControlKey ||
-                e.KeyCode == Keys.ShiftKey || e.KeyCode == Keys.LShiftKey || e.KeyCode == Keys.RShiftKey ||
-                e.KeyCode == Keys.Menu || e.KeyCode == Keys.LMenu || e.KeyCode == Keys.RMenu)
-                return;
-                
-            _recordedActions.Add(new UserAction
-            {
-                Type = UserAction.ActionType.KeyUp,
-                KeyCode = e.KeyCode,
-                CtrlKey = (Control.ModifierKeys & Keys.Control) == Keys.Control,
-                ShiftKey = (Control.ModifierKeys & Keys.Shift) == Keys.Shift,
-                AltKey = (Control.ModifierKeys & Keys.Alt) == Keys.Alt,
-                TimestampMs = _recordingTimer.ElapsedMilliseconds
-            });
-        
-        }
-        
-        private void OnKeyCombination(object sender, KeyCombinationEventArgs e)
-        {
-            if (_isRecordingDuringReplay)
-            {
-                _tempRecordBuffer.Add(new UserAction
-                {
-                    Type = UserAction.ActionType.KeyCombination,
-                    KeyCode = e.KeyCode,
-                    CtrlKey = e.CtrlKey,
-                    ShiftKey = e.ShiftKey,
-                    AltKey = e.AltKey,
-                    TimestampMs = _tempRecordTimer.ElapsedMilliseconds
-                });
-                return;
-            }
-
-            if (!_isRecording || _isReplaying) return;
-
-            _recordedActions.Add(new UserAction
-            {
-                Type = UserAction.ActionType.KeyCombination,
-                KeyCode = e.KeyCode,
-                CtrlKey = e.CtrlKey,
-                ShiftKey = e.ShiftKey,
-                AltKey = e.AltKey,
-                TimestampMs = _recordingTimer.ElapsedMilliseconds
-            });
-        }
 
         public void Dispose()
         {
             StopRecording();
             _mouseHook?.Dispose();
-            _keyboardHook?.Dispose();
+
         }
     }
 
