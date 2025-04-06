@@ -1,0 +1,17 @@
+E:\C-Sharp\RecordUserAction\obj\Debug\net9.0-windows\RecordUserAction.Form1.resources
+E:\C-Sharp\RecordUserAction\obj\Debug\net9.0-windows\RecordUserAction.csproj.GenerateResource.cache
+E:\C-Sharp\RecordUserAction\obj\Debug\net9.0-windows\RecordUserAction.GeneratedMSBuildEditorConfig.editorconfig
+E:\C-Sharp\RecordUserAction\obj\Debug\net9.0-windows\RecordUserAction.AssemblyInfoInputs.cache
+E:\C-Sharp\RecordUserAction\obj\Debug\net9.0-windows\RecordUserAction.AssemblyInfo.cs
+E:\C-Sharp\RecordUserAction\obj\Debug\net9.0-windows\RecordUserAction.csproj.CoreCompileInputs.cache
+E:\C-Sharp\RecordUserAction\obj\Debug\net9.0-windows\RecordUserAction.sourcelink.json
+E:\C-Sharp\RecordUserAction\bin\Debug\net9.0-windows\RecordUserAction.exe
+E:\C-Sharp\RecordUserAction\bin\Debug\net9.0-windows\RecordUserAction.deps.json
+E:\C-Sharp\RecordUserAction\bin\Debug\net9.0-windows\RecordUserAction.runtimeconfig.json
+E:\C-Sharp\RecordUserAction\bin\Debug\net9.0-windows\RecordUserAction.dll
+E:\C-Sharp\RecordUserAction\bin\Debug\net9.0-windows\RecordUserAction.pdb
+E:\C-Sharp\RecordUserAction\obj\Debug\net9.0-windows\RecordUserAction.dll
+E:\C-Sharp\RecordUserAction\obj\Debug\net9.0-windows\refint\RecordUserAction.dll
+E:\C-Sharp\RecordUserAction\obj\Debug\net9.0-windows\RecordUserAction.pdb
+E:\C-Sharp\RecordUserAction\obj\Debug\net9.0-windows\RecordUserAction.genruntimeconfig.cache
+E:\C-Sharp\RecordUserAction\obj\Debug\net9.0-windows\ref\RecordUserAction.dll

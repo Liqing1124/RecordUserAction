@@ -1,4 +1,4 @@
-namespace MyConsoleApp
+namespace RecordUserAction
 {
     partial class Form1
     {

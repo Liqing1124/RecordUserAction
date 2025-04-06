@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "ygutfA61DCI=",
+  "dgSpecHash": "mNu70ecvXNY=",
   "success": true,
-  "projectFilePath": "E:\\C-Sharp\\RecordUserAction\\MyConsoleApp.csproj",
+  "projectFilePath": "E:\\C-Sharp\\RecordUserAction\\RecordUserAction.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\chinh\\.nuget\\packages\\microsoft.netcore.app.crossgen2.win-x64\\9.0.3\\microsoft.netcore.app.crossgen2.win-x64.9.0.3.nupkg.sha512"
   ],

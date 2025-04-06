@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
 
-namespace MyConsoleApp
+namespace RecordUserAction
 {
     static class Program
     {

@@ -34,10 +34,13 @@ namespace RecordUserAction
     public class UserActionRecorder
     {
         private List<UserAction> _recordedActions = new List<UserAction>();
+        private List<UserAction> _tempRecordBuffer = new List<UserAction>();
         private bool _isRecording = false;
         private bool _isReplaying = false;
         private bool _isInPostReplayCooldown = false;
+        private bool _isRecordingDuringReplay = false;
         private Stopwatch _recordingTimer = new Stopwatch();
+        private Stopwatch _tempRecordTimer = new Stopwatch();
         private Form _targetForm;
         private Button _recordButton; // Reference to the record button
         
@@ -79,6 +82,15 @@ namespace RecordUserAction
         {
             if (_isRecording) return;
 
+            if (_isReplaying)
+            {
+                _tempRecordBuffer.Clear();
+                _tempRecordTimer.Reset();
+                _tempRecordTimer.Start();
+                _isRecordingDuringReplay = true;
+                return;
+            }
+
             _recordedActions.Clear();
             _recordingTimer.Reset();
             _recordingTimer.Start();
@@ -91,6 +103,13 @@ namespace RecordUserAction
 
         public void StopRecording()
         {
+            if (_isRecordingDuringReplay)
+            {
+                _tempRecordTimer.Stop();
+                _isRecordingDuringReplay = false;
+                return;
+            }
+
             if (!_isRecording) return;
 
             _recordingTimer.Stop();
@@ -293,6 +312,17 @@ namespace RecordUserAction
 
         private void OnKeyPress(object sender, KeyPressEventArgs e)
         {
+            if (_isRecordingDuringReplay)
+            {
+                _tempRecordBuffer.Add(new UserAction
+                {
+                    Type = UserAction.ActionType.KeyPress,
+                    KeyCode = (Keys)e.KeyChar,
+                    TimestampMs = _tempRecordTimer.ElapsedMilliseconds
+                });
+                return;
+            }
+
             if (!_isRecording || _isReplaying) return;
 
             _recordedActions.Add(new UserAction
@@ -305,6 +335,26 @@ namespace RecordUserAction
         
         private void OnKeyDown(object sender, KeyEventArgs e)
         {
+            if (_isRecordingDuringReplay)
+            {
+                // Don't record modifier key presses as separate events
+                if (e.KeyCode == Keys.ControlKey || e.KeyCode == Keys.LControlKey || e.KeyCode == Keys.RControlKey ||
+                    e.KeyCode == Keys.ShiftKey || e.KeyCode == Keys.LShiftKey || e.KeyCode == Keys.RShiftKey ||
+                    e.KeyCode == Keys.Menu || e.KeyCode == Keys.LMenu || e.KeyCode == Keys.RMenu)
+                    return;
+
+                _tempRecordBuffer.Add(new UserAction
+                {
+                    Type = UserAction.ActionType.KeyDown,
+                    KeyCode = e.KeyCode,
+                    CtrlKey = (Control.ModifierKeys & Keys.Control) == Keys.Control,
+                    ShiftKey = (Control.ModifierKeys & Keys.Shift) == Keys.Shift,
+                    AltKey = (Control.ModifierKeys & Keys.Alt) == Keys.Alt,
+                    TimestampMs = _tempRecordTimer.ElapsedMilliseconds
+                });
+                return;
+            }
+
             if (!_isRecording || _isReplaying || _isInPostReplayCooldown) return;
             
             // Don't record modifier key presses as separate events
@@ -326,6 +376,26 @@ namespace RecordUserAction
         
         private void OnKeyUp(object sender, KeyEventArgs e)
         {
+            if (_isRecordingDuringReplay)
+            {
+                // Don't record modifier key releases as separate events
+                if (e.KeyCode == Keys.ControlKey || e.KeyCode == Keys.LControlKey || e.KeyCode == Keys.RControlKey ||
+                    e.KeyCode == Keys.ShiftKey || e.KeyCode == Keys.LShiftKey || e.KeyCode == Keys.RShiftKey ||
+                    e.KeyCode == Keys.Menu || e.KeyCode == Keys.LMenu || e.KeyCode == Keys.RMenu)
+                    return;
+
+                _tempRecordBuffer.Add(new UserAction
+                {
+                    Type = UserAction.ActionType.KeyUp,
+                    KeyCode = e.KeyCode,
+                    CtrlKey = (Control.ModifierKeys & Keys.Control) == Keys.Control,
+                    ShiftKey = (Control.ModifierKeys & Keys.Shift) == Keys.Shift,
+                    AltKey = (Control.ModifierKeys & Keys.Alt) == Keys.Alt,
+                    TimestampMs = _tempRecordTimer.ElapsedMilliseconds
+                });
+                return;
+            }
+
             if (!_isRecording || _isReplaying || _isInPostReplayCooldown) return;
             
             // Don't record modifier key releases as separate events
@@ -343,10 +413,25 @@ namespace RecordUserAction
                 AltKey = (Control.ModifierKeys & Keys.Alt) == Keys.Alt,
                 TimestampMs = _recordingTimer.ElapsedMilliseconds
             });
+        
         }
         
         private void OnKeyCombination(object sender, KeyCombinationEventArgs e)
         {
+            if (_isRecordingDuringReplay)
+            {
+                _tempRecordBuffer.Add(new UserAction
+                {
+                    Type = UserAction.ActionType.KeyCombination,
+                    KeyCode = e.KeyCode,
+                    CtrlKey = e.CtrlKey,
+                    ShiftKey = e.ShiftKey,
+                    AltKey = e.AltKey,
+                    TimestampMs = _tempRecordTimer.ElapsedMilliseconds
+                });
+                return;
+            }
+
             if (!_isRecording || _isReplaying) return;
 
             _recordedActions.Add(new UserAction
