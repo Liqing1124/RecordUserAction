@@ -41,7 +41,7 @@ namespace RecordUserAction
         public event EventHandler ReplayStarted;
         public event EventHandler ReplayCompleted;
 
-        // For global mouse and keyboard hooks
+        // For global mouse hook
         private GlobalHook _mouseHook;
 
         private Point _lastMousePosition = Point.Empty;
@@ -84,9 +84,8 @@ namespace RecordUserAction
             _recordingTimer.Start();
             _isRecording = true;
 
-            // Start the hooks
+            // Start the mouse hook
             _mouseHook.Install();
-            _keyboardHook.Install();
         }
 
         public void StopRecording()
@@ -103,9 +102,8 @@ namespace RecordUserAction
             _recordingTimer.Stop();
             _isRecording = false;
 
-            // Stop the hooks
+            // Stop the mouse hook
             _mouseHook.Uninstall();
-            _keyboardHook.Uninstall();
         }
 
         public bool IsReplaying
@@ -184,10 +182,12 @@ namespace RecordUserAction
             _isReplaying = false;
             
             // Start a timer to clear the cooldown flag after a delay
-            System.Threading.Timer cooldownTimer = null;
-            cooldownTimer = new System.Threading.Timer((state) => {
+            var cooldownTimer = new System.Threading.Timer((state) => {
                 _isInPostReplayCooldown = false;
-                cooldownTimer?.Dispose();
+                if (state is System.Threading.Timer timer)
+                {
+                    timer.Dispose();
+                }
             }, null, 2000, Timeout.Infinite); // 2 second cooldown
             _targetForm.Invoke(new Action(() => {
                 ReplayCompleted?.Invoke(this, EventArgs.Empty);
@@ -236,21 +236,7 @@ namespace RecordUserAction
                     }
                     break;
 
-                case UserAction.ActionType.KeyPress:
-                    SimulateKeyboard.KeyPress(action.KeyCode);
-                    break;
-                
-                case UserAction.ActionType.KeyDown:
-                    SimulateKeyboard.KeyDown(action.KeyCode);
-                    break;
-                    
-                case UserAction.ActionType.KeyUp:
-                    SimulateKeyboard.KeyUp(action.KeyCode);
-                    break;
-                    
-                case UserAction.ActionType.KeyCombination:
-                    SimulateKeyboard.KeyCombination(action.KeyCode, action.CtrlKey, action.ShiftKey, action.AltKey);
-                    break;
+
 
                 case UserAction.ActionType.TabChange:
                     // Handle tab change if needed
@@ -313,11 +299,12 @@ namespace RecordUserAction
 
 
 
+
+
         public void Dispose()
         {
             StopRecording();
             _mouseHook?.Dispose();
-
         }
     }
 
@@ -335,8 +322,7 @@ namespace RecordUserAction
     {
         public enum HookType
         {
-            Mouse,
-            Keyboard
+            Mouse
         }
 
         private IntPtr _hookId = IntPtr.Zero;
@@ -345,15 +331,6 @@ namespace RecordUserAction
 
         public event MouseEventHandler MouseClick;
         public event MouseEventHandler MouseMove;
-        public event KeyPressEventHandler KeyPress;
-        public event EventHandler<KeyEventArgs> KeyDown;
-        public event EventHandler<KeyEventArgs> KeyUp;
-        public event EventHandler<KeyCombinationEventArgs> KeyCombination;
-
-        // Track modifier key states
-        private bool _isCtrlDown = false;
-        private bool _isShiftDown = false;
-        private bool _isAltDown = false;
 
         public GlobalHook(HookType hookType)
         {
@@ -365,14 +342,7 @@ namespace RecordUserAction
         {
             if (_hookId != IntPtr.Zero) return;
 
-            if (_hookType == HookType.Mouse)
-            {
-                _hookId = SetWindowsHookEx(WH_MOUSE_LL, _hookProc, GetModuleHandle(null!), 0);
-            }
-            else
-            {
-                _hookId = SetWindowsHookEx(WH_KEYBOARD_LL, _hookProc, GetModuleHandle(null!), 0);
-            }
+            _hookId = SetWindowsHookEx(WH_MOUSE_LL, _hookProc, GetModuleHandle(null!), 0);
         }
 
         public void Uninstall()
@@ -400,61 +370,6 @@ namespace RecordUserAction
                         MouseMove?.Invoke(this, new MouseEventArgs(MouseButtons.None, 0, hookStruct.pt.x, hookStruct.pt.y, 0));
                     }
                 }
-                else if (_hookType == HookType.Keyboard)
-                {
-                    KBDLLHOOKSTRUCT hookStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
-                    Keys keyCode = (Keys)hookStruct.vkCode;
-                    
-                    // Track modifier key states
-                    if (wParam == (IntPtr)WM_KEYDOWN)
-                    {
-                        // Update modifier key states
-                        if (keyCode == Keys.ControlKey || keyCode == Keys.LControlKey || keyCode == Keys.RControlKey)
-                            _isCtrlDown = true;
-                        else if (keyCode == Keys.ShiftKey || keyCode == Keys.LShiftKey || keyCode == Keys.RShiftKey)
-                            _isShiftDown = true;
-                        else if (keyCode == Keys.Menu || keyCode == Keys.LMenu || keyCode == Keys.RMenu) // Alt key
-                            _isAltDown = true;
-                        
-                        // Trigger KeyDown event for all keys
-                        KeyDown?.Invoke(this, new KeyEventArgs(keyCode));
-                        
-                        // If any modifier is pressed, also trigger KeyCombination event
-                        if (_isCtrlDown || _isShiftDown || _isAltDown)
-                        {
-                            if (!(keyCode == Keys.ControlKey || keyCode == Keys.LControlKey || keyCode == Keys.RControlKey ||
-                                keyCode == Keys.ShiftKey || keyCode == Keys.LShiftKey || keyCode == Keys.RShiftKey ||
-                                keyCode == Keys.Menu || keyCode == Keys.LMenu || keyCode == Keys.RMenu))
-                            {
-                                KeyCombination?.Invoke(this, new KeyCombinationEventArgs
-                                {
-                                    KeyCode = keyCode,
-                                    CtrlKey = _isCtrlDown,
-                                    ShiftKey = _isShiftDown,
-                                    AltKey = _isAltDown
-                                });
-                            }
-                        }
-                        else
-                        {
-                            // Regular key press (for backward compatibility)
-                            KeyPress?.Invoke(this, new KeyPressEventArgs((char)hookStruct.vkCode));
-                        }
-                    }
-                    else if (wParam == (IntPtr)WM_KEYUP)
-                    {
-                        // Trigger KeyUp event for all keys
-                        KeyUp?.Invoke(this, new KeyEventArgs(keyCode));
-                        
-                        // Reset modifier key states
-                        if (keyCode == Keys.ControlKey || keyCode == Keys.LControlKey || keyCode == Keys.RControlKey)
-                            _isCtrlDown = false;
-                        else if (keyCode == Keys.ShiftKey || keyCode == Keys.LShiftKey || keyCode == Keys.RShiftKey)
-                            _isShiftDown = false;
-                        else if (keyCode == Keys.Menu || keyCode == Keys.LMenu || keyCode == Keys.RMenu) // Alt key
-                            _isAltDown = false;
-                    }
-                }
             }
 
             return CallNextHookEx(_hookId, nCode, wParam, lParam);
@@ -468,11 +383,8 @@ namespace RecordUserAction
         #region Native Methods
 
         private const int WH_MOUSE_LL = 14;
-        private const int WH_KEYBOARD_LL = 13;
         private const int WM_LBUTTONDOWN = 0x0201;
         private const int WM_MOUSEMOVE = 0x0200;
-        private const int WM_KEYDOWN = 0x0100;
-        private const int WM_KEYUP = 0x0101;
 
         private delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);
 
@@ -506,15 +418,7 @@ namespace RecordUserAction
             public IntPtr dwExtraInfo;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        private struct KBDLLHOOKSTRUCT
-        {
-            public uint vkCode;
-            public uint scanCode;
-            public uint flags;
-            public uint time;
-            public IntPtr dwExtraInfo;
-        }
+
 
         #endregion
     }
@@ -613,8 +517,9 @@ namespace RecordUserAction
         public static void MoveTo(int x, int y)
         {
             // Convert to normalized coordinates
-            int screenWidth = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Width;
-            int screenHeight = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Height;
+            var primaryScreen = System.Windows.Forms.Screen.PrimaryScreen;
+            int screenWidth = primaryScreen?.Bounds.Width ?? 1920;  // Default to 1920x1080 if no screen is available
+            int screenHeight = primaryScreen?.Bounds.Height ?? 1080;
             int normalizedX = (x * 65536) / screenWidth;
             int normalizedY = (y * 65536) / screenHeight;
 
@@ -664,8 +569,26 @@ namespace RecordUserAction
             public KEYBDINPUT ki;
         }
 
+        [DllImport("user32.dll")]
+        public static extern short VkKeyScan(char ch);
+
+        [DllImport("user32.dll")]
+        private static extern ushort MapVirtualKey(uint uCode, uint uMapType);
+
         private static INPUT[] CreateKeyboardInput(Keys key, bool isKeyUp)
         {
+            ushort scanCode = MapVirtualKey((uint)key, 0);
+            bool isExtendedKey = key == Keys.RControlKey || key == Keys.RShiftKey || 
+                                key == Keys.RMenu || key == Keys.Insert || 
+                                key == Keys.Delete || key == Keys.Home || 
+                                key == Keys.End || key == Keys.PageUp || 
+                                key == Keys.PageDown || key == Keys.Up || 
+                                key == Keys.Down || key == Keys.Left || 
+                                key == Keys.Right || key == Keys.NumLock;
+
+            uint flags = isKeyUp ? KEYEVENTF_KEYUP : KEYEVENTF_KEYDOWN;
+            if (isExtendedKey) flags |= KEYEVENTF_EXTENDEDKEY;
+
             return new INPUT[]
             {
                 new INPUT
@@ -674,8 +597,8 @@ namespace RecordUserAction
                     ki = new KEYBDINPUT
                     {
                         wVk = (ushort)key,
-                        wScan = 0,
-                        dwFlags = isKeyUp ? KEYEVENTF_KEYUP : KEYEVENTF_KEYDOWN | KEYEVENTF_EXTENDEDKEY,
+                        wScan = scanCode,
+                        dwFlags = flags,
                         time = 0,
                         dwExtraInfo = IntPtr.Zero
                     }
@@ -687,11 +610,22 @@ namespace RecordUserAction
         {
             try
             {
+                // For character keys, we need to handle them differently than control keys
+                bool isChar = (int)key >= (int)Keys.A && (int)key <= (int)Keys.Z;
+                
                 // Send key down
-                SendInput(1, CreateKeyboardInput(key, false), Marshal.SizeOf(typeof(INPUT)));
-                Thread.Sleep(50); // Small delay between press and release
+                var input = CreateKeyboardInput(key, false);
+                SendInput(1, input, Marshal.SizeOf(typeof(INPUT)));
+                
+                // Delay between press and release based on key type
+                Thread.Sleep(isChar ? 20 : 30);
+                
                 // Send key up
-                SendInput(1, CreateKeyboardInput(key, true), Marshal.SizeOf(typeof(INPUT)));
+                input = CreateKeyboardInput(key, true);
+                SendInput(1, input, Marshal.SizeOf(typeof(INPUT)));
+                
+                // Small delay after key release to ensure proper timing
+                Thread.Sleep(10);
             }
             catch (Exception ex)
             {
@@ -727,30 +661,44 @@ namespace RecordUserAction
         {
             try
             {
-                var inputs = new List<INPUT>();
-
-                // Press modifier keys
+                // Press modifier keys with small delays between each
                 if (ctrl)
-                    inputs.AddRange(CreateKeyboardInput(Keys.ControlKey, false));
+                {
+                    SendInput(1, CreateKeyboardInput(Keys.ControlKey, false), Marshal.SizeOf(typeof(INPUT)));
+                    Thread.Sleep(20);
+                }
                 if (shift)
-                    inputs.AddRange(CreateKeyboardInput(Keys.ShiftKey, false));
+                {
+                    SendInput(1, CreateKeyboardInput(Keys.ShiftKey, false), Marshal.SizeOf(typeof(INPUT)));
+                    Thread.Sleep(20);
+                }
                 if (alt)
-                    inputs.AddRange(CreateKeyboardInput(Keys.Menu, false));
+                {
+                    SendInput(1, CreateKeyboardInput(Keys.Menu, false), Marshal.SizeOf(typeof(INPUT)));
+                    Thread.Sleep(20);
+                }
 
-                // Press and release the main key
-                inputs.AddRange(CreateKeyboardInput(key, false));
-                inputs.AddRange(CreateKeyboardInput(key, true));
+                // Press the main key
+                SendInput(1, CreateKeyboardInput(key, false), Marshal.SizeOf(typeof(INPUT)));
+                Thread.Sleep(50);
+                SendInput(1, CreateKeyboardInput(key, true), Marshal.SizeOf(typeof(INPUT)));
+                Thread.Sleep(20);
 
-                // Release modifier keys in reverse order
+                // Release modifier keys in reverse order with small delays
                 if (alt)
-                    inputs.AddRange(CreateKeyboardInput(Keys.Menu, true));
+                {
+                    SendInput(1, CreateKeyboardInput(Keys.Menu, true), Marshal.SizeOf(typeof(INPUT)));
+                    Thread.Sleep(20);
+                }
                 if (shift)
-                    inputs.AddRange(CreateKeyboardInput(Keys.ShiftKey, true));
+                {
+                    SendInput(1, CreateKeyboardInput(Keys.ShiftKey, true), Marshal.SizeOf(typeof(INPUT)));
+                    Thread.Sleep(20);
+                }
                 if (ctrl)
-                    inputs.AddRange(CreateKeyboardInput(Keys.ControlKey, true));
-
-                // Send all inputs at once
-                SendInput((uint)inputs.Count, inputs.ToArray(), Marshal.SizeOf(typeof(INPUT)));
+                {
+                    SendInput(1, CreateKeyboardInput(Keys.ControlKey, true), Marshal.SizeOf(typeof(INPUT)));
+                }
             }
             catch (Exception ex)
             {
