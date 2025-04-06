@@ -1,6 +1,6 @@
 # User Action Recorder
 
-A C# Windows Forms application that records and replays user actions including mouse movements, clicks, and keyboard inputs with high precision and customizable replay functionality.
+A C# Windows Forms application that records and replays user actions including mouse movements, clicks, and keyboard (not working) inputs with high precision and customizable replay functionality.
 
 ## Features
 
