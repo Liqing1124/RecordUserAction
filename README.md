@@ -26,14 +26,14 @@ A C# Windows Forms application that records and replays mouse actions with high 
 ## Requirements
 
 - Windows operating system
-- .NET 9.0 or later
+- .NET Framework 4.8 or later
 - Windows Forms compatible environment
 - MouseKeyHook package (automatically installed via NuGet)
 
 ## Installation
 
 1. Clone or download this repository
-2. Open the solution in Visual Studio 2022 or later
+2. Open the solution in Visual Studio 2019 or later
 3. Build the solution (dependencies will be automatically restored via NuGet)
 4. Run the application
 
@@ -63,7 +63,7 @@ Alternatively, you can download the pre-built binaries from the releases section
 
 ## Technical Implementation
 
-- Uses the `GlobalHook` class for system-wide input capture
+- Uses the `GlobalHook` class for system-wide mouse input capture
 - Implements `IDisposable` for proper resource management
 - Maintains separate timers for recording and temporary buffers
 - Includes threshold-based movement filtering to reduce noise
