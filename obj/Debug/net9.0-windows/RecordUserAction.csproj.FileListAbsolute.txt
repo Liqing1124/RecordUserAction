@@ -15,3 +15,6 @@ E:\C-Sharp\RecordUserAction\obj\Debug\net9.0-windows\refint\RecordUserAction.dll
 E:\C-Sharp\RecordUserAction\obj\Debug\net9.0-windows\RecordUserAction.pdb
 E:\C-Sharp\RecordUserAction\obj\Debug\net9.0-windows\RecordUserAction.genruntimeconfig.cache
 E:\C-Sharp\RecordUserAction\obj\Debug\net9.0-windows\ref\RecordUserAction.dll
+E:\C-Sharp\RecordUserAction\obj\Debug\net9.0-windows\RecordUserAction.csproj.AssemblyReference.cache
+E:\C-Sharp\RecordUserAction\bin\Debug\net9.0-windows\Gma.System.MouseKeyHook.dll
+E:\C-Sharp\RecordUserAction\obj\Debug\net9.0-windows\RecordUs.8CCC8738.Up2Date
