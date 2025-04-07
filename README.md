@@ -1,4 +1,4 @@
-# User Action Recorder
+# User Action Clicks
 
 A C# Windows Forms application that records and replays mouse actions with high precision and customizable replay functionality. This tool allows you to automate repetitive mouse tasks by recording your actions once and replaying them multiple times.
 
