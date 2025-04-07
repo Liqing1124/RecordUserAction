@@ -32,10 +32,12 @@ namespace RecordUserAction
         private bool _isReplaying = false;
         private bool _isInPostReplayCooldown = false;
         private bool _isRecordingDuringReplay = false;
+        private bool _stopReplayRequested = false; // Flag to signal replay cancellation
         private Stopwatch _recordingTimer = new Stopwatch();
         private Stopwatch _tempRecordTimer = new Stopwatch();
         private Form _targetForm;
         private Button _recordButton; // Reference to the record button
+        private float _replaySpeedMultiplier = 1.0f; // Speed control for replay
         
         // Events to notify the form about replay status
         public event EventHandler ReplayStarted;
@@ -103,6 +105,20 @@ namespace RecordUserAction
         {
             get { return _isReplaying; }
         }
+        
+        /// <summary>
+        /// Stops an ongoing replay immediately
+        /// </summary>
+        public void StopReplay()
+        {
+            if (!_isReplaying) return;
+            
+            // Set the flag to request stopping the replay
+            _stopReplayRequested = true;
+            
+            // Give a small amount of time for the replay thread to notice the stop request
+            Thread.Sleep(100);
+        }
 
         // Modified to accept replay count
         public void ReplayActions(int replayCount = 1)
@@ -123,40 +139,55 @@ namespace RecordUserAction
         {
             int replayCount = (int)replayCountObj;
             Stopwatch replayTimer = new Stopwatch();
-
+            
+            // Reset the stop flag at the beginning of replay
+            _stopReplayRequested = false;
             
             for (int i = 0; i < replayCount; i++)
             {
+                // Check if stop was requested before starting a new iteration
+                if (_stopReplayRequested)
+                {
+                    break;
+                }
+                
                 replayTimer.Restart(); // Restart timer for each replay cycle
                 int actionIndex = 0;
                 long lastFrameTime = 0;
 
                 while (actionIndex < _recordedActions.Count)
                 {
+                    // Check if stop was requested during replay
+                    if (_stopReplayRequested)
+                    {
+                        break;
+                    }
+                    
                     UserAction action = _recordedActions[actionIndex];
+                    long targetTime = (long)(action.TimestampMs / _replaySpeedMultiplier);
                     long currentTime = replayTimer.ElapsedMilliseconds;
 
-                    // Maintain consistent frame timing (optional, adjust as needed)
-                    // if (currentTime - lastFrameTime < 16) // ~60fps frame time
-                    // {
-                    //     Thread.Sleep(1);
-                    //     continue;
-                    // }
-
-                    // Wait until it's time to perform this action relative to the start of this cycle
-                    if (currentTime < action.TimestampMs)
+                    if (currentTime < targetTime)
                     {
-                        Thread.Sleep(1);
+                        // Use shorter sleep intervals for more precise timing
+                        long waitTime = Math.Min(targetTime - currentTime, 5);
+                        if (waitTime > 0)
+                        {
+                            Thread.Sleep((int)waitTime);
+                        }
                         continue;
                     }
 
-                    lastFrameTime = currentTime;
-
-                    // Perform the action
                     PerformAction(action, actionIndex);
                     actionIndex++;
                 }
                 replayTimer.Stop(); // Stop timer for this cycle
+                
+                // If stop was requested, break out of the replay loop
+                if (_stopReplayRequested)
+                {
+                    break;
+                }
 
                 // Optional: Add a small delay between replays if desired
                 if (i < replayCount - 1)
@@ -201,7 +232,7 @@ namespace RecordUserAction
                     else
                     {
                         // Add a small delay before clicking to ensure the application is ready
-                        Thread.Sleep(10);
+                        Thread.Sleep(5); // Reduced from 10ms to 5ms
                         SimulateMouse.Click(action.Location.X, action.Location.Y);
                     }
                     break;
@@ -211,8 +242,8 @@ namespace RecordUserAction
                     if (actionIndex > 0 && _recordedActions[actionIndex - 1].Type == UserAction.ActionType.MouseMove)
                     {
                         var prevAction = _recordedActions[actionIndex - 1];
-                        var timeDiff = action.TimestampMs - prevAction.TimestampMs;
-                        var steps = Math.Max(1, timeDiff / 16); // ~60fps
+                        var timeDiff = (action.TimestampMs - prevAction.TimestampMs) / _replaySpeedMultiplier;
+                        var steps = Math.Max(1, Math.Min(10, timeDiff / 8)); // Cap at 10 steps, 8ms per step
                         
                         for (int i = 1; i <= steps; i++)
                         {
@@ -220,7 +251,12 @@ namespace RecordUserAction
                             var x = prevAction.Location.X + (action.Location.X - prevAction.Location.X) * t;
                             var y = prevAction.Location.Y + (action.Location.Y - prevAction.Location.Y) * t;
                             SimulateMouse.MoveTo((int)x, (int)y);
-                            Thread.Sleep(1);
+                            
+                            // Only sleep if we're not on the last step and have more than 2 steps
+                            if (steps > 2 && i < steps)
+                            {
+                                Thread.Sleep(1);
+                            }
                         }
                     }
                     else
@@ -309,9 +345,11 @@ namespace RecordUserAction
             });
         }
 
-
-
-
+        public float ReplaySpeedMultiplier
+        {
+            get { return _replaySpeedMultiplier; }
+            set { _replaySpeedMultiplier = Math.Max(0.1f, Math.Min(10.0f, value)); }
+        }
 
         public void Dispose()
         {
